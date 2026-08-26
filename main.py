@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models
+import schemas
+
 
 # Create tables if they don't exist
 models.Base.metadata.create_all(bind=engine)
@@ -80,3 +82,61 @@ def get_certifications(db: Session = Depends(get_db)):
         }
         for c in certs
     ]
+    
+@app.post("/projects")
+def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
+    new_project = models.Project(
+        title=project.title,
+        description=project.description,
+        tech_stack=project.tech_stack,
+        category=project.category,
+        live_url=project.live_url,
+        github_url=project.github_url
+    )
+    db.add(new_project)
+    db.commit()
+    db.refresh(new_project)
+    return new_project
+
+@app.put("/projects/{project_id}")
+def update_project(
+    project_id: int,
+    updates: schemas.ProjectUpdate,
+    db: Session = Depends(get_db)
+):
+    project = db.query(models.Project).filter(
+        models.Project.id == project_id
+    ).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if updates.title is not None:
+        project.title = updates.title
+    if updates.description is not None:
+        project.description = updates.description
+    if updates.tech_stack is not None:
+        project.tech_stack = updates.tech_stack
+    if updates.category is not None:
+        project.category = updates.category
+    if updates.live_url is not None:
+        project.live_url = updates.live_url
+    if updates.github_url is not None:
+        project.github_url = updates.github_url
+
+    db.commit()
+    db.refresh(project)
+    return project
+
+@app.delete("/projects/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(models.Project).filter(
+        models.Project.id == project_id
+    ).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    db.delete(project)
+    db.commit()
+    return {"message": f"Project '{project.title}' deleted successfully"}
