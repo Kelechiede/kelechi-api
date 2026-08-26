@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models
 import schemas
+import auth
 
 
 # Create tables if they don't exist
@@ -84,7 +86,7 @@ def get_certifications(db: Session = Depends(get_db)):
     ]
     
 @app.post("/projects")
-def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
+def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db), current_user: str = Depends(auth.verify_token)):
     new_project = models.Project(
         title=project.title,
         description=project.description,
@@ -102,7 +104,7 @@ def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)
 def update_project(
     project_id: int,
     updates: schemas.ProjectUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db), current_user: str = Depends(auth.verify_token)
 ):
     project = db.query(models.Project).filter(
         models.Project.id == project_id
@@ -129,7 +131,7 @@ def update_project(
     return project
 
 @app.delete("/projects/{project_id}")
-def delete_project(project_id: int, db: Session = Depends(get_db)):
+def delete_project(project_id: int, db: Session = Depends(get_db), current_user: str = Depends(auth.verify_token)):
     project = db.query(models.Project).filter(
         models.Project.id == project_id
     ).first()
@@ -140,3 +142,59 @@ def delete_project(project_id: int, db: Session = Depends(get_db)):
     db.delete(project)
     db.commit()
     return {"message": f"Project '{project.title}' deleted successfully"}
+
+# ── AUTH ROUTES ───────────────────────────────────────
+
+@app.post("/auth/register")
+def register(user: schemas.UserRegister, db: Session = Depends(get_db)):
+    # Check if username already exists
+    existing = db.query(models.User).filter(
+        models.User.username == user.username
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Username already registered"
+        )
+    # Hash the password before storing
+    new_user = models.User(
+        username=user.username,
+        email=user.email,
+        password=auth.hash_password(user.password)
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {
+        "message": f"Account created successfully for {user.username}",
+        "username": user.username,
+        "email": user.email
+    }
+
+
+@app.post("/auth/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    # Find user by username
+    user = db.query(models.User).filter(
+        models.User.username == form_data.username
+    ).first()
+    # Verify user exists and password is correct
+    if not user or not auth.verify_password(form_data.password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    # Create and return JWT token
+    access_token = auth.create_access_token(
+        data={"sub": user.username}
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": user.username,
+        "message": "Login successful"
+    }

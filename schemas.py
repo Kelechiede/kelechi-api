@@ -17,3 +17,13 @@ class ProjectUpdate(BaseModel):
     category:       Optional[str] = None
     live_url:       Optional[str] = None
     github_url:     Optional[str] = None
+    
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+    
+class UserLogin(BaseModel):
+    username: str
+    password: str
+    
