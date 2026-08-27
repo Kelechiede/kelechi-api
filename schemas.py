@@ -26,4 +26,40 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+class SkillCreate(BaseModel):
+    category: str
+    name:      str
+
+class SkillUpdate(BaseModel):
+    category: Optional[str] = None
+    name:     Optional[str] = None
+
+
+class EducationCreate(BaseModel):
+    degree:      str
+    institution: str
+    location:    str
+    year:        str
+    focus:       str
+
+class EducationUpdate(BaseModel):
+    degree:      Optional[str] = None
+    institution: Optional[str] = None
+    location:    Optional[str] = None
+    year:        Optional[str] = None
+    focus:       Optional[str] = None
+
+
+class CertificationCreate(BaseModel):
+    name:   str
+    issuer: str
+    type:   str
+
+class CertificationUpdate(BaseModel):
+    name:   Optional[str] = None
+    issuer: Optional[str] = None
+    type:   Optional[str] = None
+    
     

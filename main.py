@@ -198,3 +198,179 @@ def login(
         "username": user.username,
         "message": "Login successful"
     }
+    
+# ── SKILLS CRUD ───────────────────────────────────────
+
+@app.post("/skills")
+def create_skill(
+    skill: schemas.SkillCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    new_skill = models.Skill(
+        category=skill.category,
+        name=skill.name
+    )
+    db.add(new_skill)
+    db.commit()
+    db.refresh(new_skill)
+    return new_skill
+
+
+@app.put("/skills/{skill_id}")
+def update_skill(
+    skill_id: int,
+    updates: schemas.SkillUpdate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    skill = db.query(models.Skill).filter(
+        models.Skill.id == skill_id
+    ).first()
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    if updates.category is not None:
+        skill.category = updates.category
+    if updates.name is not None:
+        skill.name = updates.name
+    db.commit()
+    db.refresh(skill)
+    return skill
+
+
+@app.delete("/skills/{skill_id}")
+def delete_skill(
+    skill_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    skill = db.query(models.Skill).filter(
+        models.Skill.id == skill_id
+    ).first()
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    db.delete(skill)
+    db.commit()
+    return {"message": f"Skill '{skill.name}' deleted successfully"}
+
+
+# ── EDUCATION CRUD ────────────────────────────────────
+
+@app.post("/education")
+def create_education(
+    edu: schemas.EducationCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    new_edu = models.Education(
+        degree=edu.degree,
+        institution=edu.institution,
+        location=edu.location,
+        year=edu.year,
+        focus=edu.focus
+    )
+    db.add(new_edu)
+    db.commit()
+    db.refresh(new_edu)
+    return new_edu
+
+
+@app.put("/education/{edu_id}")
+def update_education(
+    edu_id: int,
+    updates: schemas.EducationUpdate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    edu = db.query(models.Education).filter(
+        models.Education.id == edu_id
+    ).first()
+    if not edu:
+        raise HTTPException(status_code=404, detail="Education record not found")
+    if updates.degree is not None:
+        edu.degree = updates.degree
+    if updates.institution is not None:
+        edu.institution = updates.institution
+    if updates.location is not None:
+        edu.location = updates.location
+    if updates.year is not None:
+        edu.year = updates.year
+    if updates.focus is not None:
+        edu.focus = updates.focus
+    db.commit()
+    db.refresh(edu)
+    return edu
+
+
+@app.delete("/education/{edu_id}")
+def delete_education(
+    edu_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    edu = db.query(models.Education).filter(
+        models.Education.id == edu_id
+    ).first()
+    if not edu:
+        raise HTTPException(status_code=404, detail="Education record not found")
+    db.delete(edu)
+    db.commit()
+    return {"message": f"Education record '{edu.degree}' deleted successfully"}
+
+
+# ── CERTIFICATIONS CRUD ───────────────────────────────
+
+@app.post("/certifications")
+def create_certification(
+    cert: schemas.CertificationCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    new_cert = models.Certification(
+        name=cert.name,
+        issuer=cert.issuer,
+        type=cert.type
+    )
+    db.add(new_cert)
+    db.commit()
+    db.refresh(new_cert)
+    return new_cert
+
+
+@app.put("/certifications/{cert_id}")
+def update_certification(
+    cert_id: int,
+    updates: schemas.CertificationUpdate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    cert = db.query(models.Certification).filter(
+        models.Certification.id == cert_id
+    ).first()
+    if not cert:
+        raise HTTPException(status_code=404, detail="Certification not found")
+    if updates.name is not None:
+        cert.name = updates.name
+    if updates.issuer is not None:
+        cert.issuer = updates.issuer
+    if updates.type is not None:
+        cert.type = updates.type
+    db.commit()
+    db.refresh(cert)
+    return cert
+
+
+@app.delete("/certifications/{cert_id}")
+def delete_certification(
+    cert_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(auth.verify_token)
+):
+    cert = db.query(models.Certification).filter(
+        models.Certification.id == cert_id
+    ).first()
+    if not cert:
+        raise HTTPException(status_code=404, detail="Certification not found")
+    db.delete(cert)
+    db.commit()
+    return {"message": f"Certification '{cert.name}' deleted successfully"}
